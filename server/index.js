@@ -10,8 +10,13 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Middleware
-app.use(cors());
+// ✅ CORS：明確允許 GitHub Pages
+app.use(cors({
+  origin: 'https://tiara-lin.github.io',
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type'],
+  credentials: false
+}));
 app.use(express.json());
 
 // MongoDB connection
@@ -35,14 +40,12 @@ async function connectToMongoDB() {
   }
 }
 
-// Helper: Get client IP
 function getClientIP(req) {
   const forwarded = req.headers['x-forwarded-for'];
   if (forwarded) return forwarded.split(',')[0].trim();
   return req.connection?.remoteAddress || req.socket?.remoteAddress || req.connection?.socket?.remoteAddress || req.ip;
 }
 
-// Helper: Get device info
 function getDeviceInfo(req) {
   const userAgent = req.headers['user-agent'] || '';
   const isMobile = /Mobile|Android|iPhone|iPad/.test(userAgent);
@@ -270,7 +273,7 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// ---- 靜態檔案處理（改為 dist）----
+// 靜態檔案（serve 前端 Vite build）
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -280,7 +283,7 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
-// ---- 啟動伺服器 ----
+// 啟動伺服器
 app.listen(PORT, async () => {
   console.log(`Server running on port ${PORT}`);
   await connectToMongoDB();
