@@ -10,7 +10,6 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// ✅ CORS 設定：允許 GitHub Pages 請求
 app.use(cors({
   origin: 'https://tiara-lin.github.io',
   methods: ['GET', 'POST', 'OPTIONS'],
@@ -29,7 +28,6 @@ async function connectToMongoDB() {
     db = client.db('instagram_analytics');
     console.log('Connected to MongoDB');
 
-    // 建立索引
     await db.collection('user_interactions').createIndex({ timestamp: -1 });
     await db.collection('user_interactions').createIndex({ ip_address: 1 });
     await db.collection('user_interactions').createIndex({ post_id: 1 });
@@ -58,7 +56,76 @@ function getDeviceInfo(req) {
   };
 }
 
-// 各種 API routes（略） ← 這部分你可以保留原來的
+// ✅ 新增 dashboard 分析 API
+app.get('/api/analytics/dashboard', async (req, res) => {
+  try {
+    const timeframe = req.query.timeframe || '24h';
+    const now = new Date();
+    let since;
+
+    switch (timeframe) {
+      case '1h':
+        since = new Date(now.getTime() - 60 * 60 * 1000); break;
+      case '7d':
+        since = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000); break;
+      case '30d':
+        since = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000); break;
+      case '24h':
+      default:
+        since = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    }
+
+    const matchStage = { $match: { timestamp: { $gte: since } } };
+
+    const [
+      totalInteractions,
+      uniqueUsers,
+      interactionBreakdown,
+      popularPosts,
+      deviceBreakdown,
+      hourlyActivity
+    ] = await Promise.all([
+      db.collection('user_interactions').countDocuments({ timestamp: { $gte: since } }),
+      db.collection('user_sessions').distinct('ip_address', { session_start: { $gte: since } }).then(arr => arr.length),
+      db.collection('user_interactions').aggregate([
+        matchStage,
+        { $group: { _id: '$interaction_type', count: { $sum: 1 } } }
+      ]).toArray(),
+      db.collection('user_interactions').aggregate([
+        matchStage,
+        { $group: { _id: { post_id: '$post_id', post_username: '$post_username' }, interactions: { $sum: 1 } } },
+        { $sort: { interactions: -1 } },
+        { $limit: 5 }
+      ]).toArray(),
+      db.collection('user_sessions').aggregate([
+        { $match: { session_start: { $gte: since } } },
+        { $group: { _id: '$device.device_type', count: { $sum: 1 } } }
+      ]).toArray(),
+      db.collection('user_interactions').aggregate([
+        matchStage,
+        { $group: { _id: { $hour: '$timestamp' }, count: { $sum: 1 } } },
+        { $sort: { _id: 1 } }
+      ]).toArray()
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        total_interactions: totalInteractions,
+        unique_users: uniqueUsers,
+        interaction_breakdown: interactionBreakdown,
+        popular_posts: popularPosts,
+        device_breakdown: deviceBreakdown,
+        hourly_activity: hourlyActivity,
+        timeframe
+      }
+    });
+
+  } catch (error) {
+    console.error('Analytics API error:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -80,11 +147,10 @@ app.get('*', (req, res) => {
 });
 
 // ✅ 啟動伺服器
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`Server running on port ${PORT}`);
-  connectToMongoDB();
+  await connectToMongoDB();
 });
-
 
 process.on('SIGINT', async () => {
   console.log('Shutting down gracefully...');
