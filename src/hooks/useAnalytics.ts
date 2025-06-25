@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import axios from 'axios';
 
-const API_BASE_URL = 'https://test-backend2-production.up.railway.app/api';
+const API_BASE_URL = 'https://test-backend3-production.up.railway.app/api';
 
 interface AnalyticsHook {
   trackSession: () => Promise<void>;

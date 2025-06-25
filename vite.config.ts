@@ -1,9 +1,8 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-// 用 defineConfig 包裝可以自動提供型別提示
 export default defineConfig({
-  base: '/test-backend3/',
+  base: '/test-backend3/', // 這是你 GitHub Pages 或 Railway 的公開 base path
   plugins: [react()],
   optimizeDeps: {
     exclude: ['lucide-react'],

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BarChart3, Users, Eye, Heart, MessageCircle, Share, Bookmark, Clock } from 'lucide-react';
 import axios from 'axios';
 
-const API_BASE_URL = 'https://test-backend2-production.up.railway.app/api';
+const API_BASE_URL = 'https://test-backend3-production.up.railway.app/api';
 
 interface AnalyticsData {
   total_interactions: number;
