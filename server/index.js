@@ -80,10 +80,11 @@ app.get('*', (req, res) => {
 });
 
 // ✅ 啟動伺服器
-app.listen(PORT, async () => {
+app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-  await connectToMongoDB();
+  connectToMongoDB();
 });
+
 
 process.on('SIGINT', async () => {
   console.log('Shutting down gracefully...');
