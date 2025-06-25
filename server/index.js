@@ -10,7 +10,7 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// ✅ CORS 設定：允許 GitHub Pages 請求
+// CORS 設定：允許 GitHub Pages 請求
 app.use(cors({
   origin: 'https://tiara-lin.github.io',
   methods: ['GET', 'POST', 'OPTIONS'],
@@ -56,6 +56,71 @@ function getDeviceInfo(req) {
     device_type: isMobile ? 'mobile' : 'desktop'
   };
 }
+
+// ✅ Track Session
+app.post('/api/track/session', async (req, res) => {
+  try {
+    const ip = getClientIP(req);
+    const device = getDeviceInfo(req);
+
+    const session = {
+      ip_address: ip,
+      device,
+      page_url: req.body.page_url,
+      session_start: new Date()
+    };
+
+    const result = await db.collection('user_sessions').insertOne(session);
+    res.json({ success: true, session_id: result.insertedId });
+  } catch (error) {
+    console.error('Track session error:', error);
+    res.status(500).json({ success: false, message: 'Failed to track session' });
+  }
+});
+
+// ✅ Track Interaction
+app.post('/api/track/interaction', async (req, res) => {
+  try {
+    const interaction = {
+      session_id: req.body.session_id,
+      ip_address: getClientIP(req),
+      interaction_type: req.body.action_type,
+      post_id: req.body.post_id,
+      post_username: req.body.post_username,
+      additional_data: req.body.additional_data || {},
+      timestamp: new Date()
+    };
+
+    await db.collection('user_interactions').insertOne(interaction);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Track interaction error:', error);
+    res.status(500).json({ success: false, message: 'Failed to track interaction' });
+  }
+});
+
+// ✅ Track Post View
+app.post('/api/track/post-view', async (req, res) => {
+  try {
+    const postView = {
+      session_id: req.body.session_id,
+      ip_address: getClientIP(req),
+      post_id: req.body.post_id,
+      post_username: req.body.post_username,
+      view_duration: req.body.view_duration,
+      scroll_percentage: req.body.scroll_percentage,
+      media_type: req.body.media_type,
+      timestamp: new Date(),
+      interaction_type: 'post_view'
+    };
+
+    await db.collection('user_interactions').insertOne(postView);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Track post view error:', error);
+    res.status(500).json({ success: false, message: 'Failed to track post view' });
+  }
+});
 
 // ✅ Dashboard API
 app.get('/api/analytics/dashboard', async (req, res) => {
@@ -138,16 +203,15 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// ✅ 靜態前端處理修正（改為 ../dist）
+// Static frontend (Vite)
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
 app.use(express.static(path.join(__dirname, '../dist')));
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../dist', 'index.html'));
 });
 
-// ✅ 啟動伺服器
+// 啟動伺服器
 app.listen(PORT, async () => {
   console.log(`Server running on port ${PORT}`);
   await connectToMongoDB();
