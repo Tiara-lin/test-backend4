@@ -10,6 +10,7 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// ✅ CORS 設定：允許 GitHub Pages 請求
 app.use(cors({
   origin: 'https://tiara-lin.github.io',
   methods: ['GET', 'POST', 'OPTIONS'],
@@ -56,7 +57,7 @@ function getDeviceInfo(req) {
   };
 }
 
-// ✅ 新增 dashboard 分析 API
+// ✅ Dashboard API
 app.get('/api/analytics/dashboard', async (req, res) => {
   try {
     const timeframe = req.query.timeframe || '24h';
@@ -137,7 +138,7 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// 🔧 靜態前端處理（Vite）
+// ✅ 靜態前端處理修正（改為 ../dist）
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 

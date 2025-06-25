@@ -1,15 +1,16 @@
 {
-  "name": "vite-react-typescript-starter",
+  "name": "instagram-analytics",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "homepage": "https://Tiara-lin.github.io/test-backend3",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && xcopy /E /I /Y dist ..\\dist", 
     "lint": "eslint .",
     "preview": "vite preview",
     "server": "node server/index.js",
+    "start": "node server/index.js",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist"
   },
