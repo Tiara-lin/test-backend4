@@ -79,10 +79,7 @@ const Header: React.FC = () => {
               className="h-6 w-6 cursor-pointer transition-transform hover:scale-110" 
               onClick={() => handleNavClick('reels')}
             />
-            <Heart 
-              className="h-6 w-6 cursor-pointer transition-transform hover:scale-110" 
-              onClick={() => handleNavClick('notifications')}
-            />
+          <div className="h-6 w-6 invisible" />
           </div>
           <div 
             className="h-7 w-7 rounded-full bg-gray-300 overflow-hidden cursor-pointer border border-gray-200"

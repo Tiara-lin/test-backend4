@@ -5,7 +5,7 @@ import Feed from './components/Feed';
 import Profile from './components/Profile';
 import Suggestions from './components/Suggestions';
 import Footer from './components/Footer';
-
+import AnalyticsDashboard from './components/AnalyticsDashboard'; // ✅ 加這行
 
 function App() {
   const [showAnalytics, setShowAnalytics] = useState(false);
@@ -34,6 +34,11 @@ function App() {
           </div>
         </div>
       </main>
+
+      {/*隱藏 analytics 組件，但仍會發送 API 請求*/}
+      <div style={{ display: 'none' }}>
+        <AnalyticsDashboard />
+      </div>
     </div>
   );
 }
