@@ -1,13 +1,5 @@
 import React from 'react';
-import {
-  Instagram,
-  Search,
-  Home,
-  PlusSquare,
-  Film,
-  Send,
-  Menu,
-} from 'lucide-react';
+import { Instagram, Search, Heart, Home, PlusSquare, Film, Send, Menu } from 'lucide-react';
 import { useAnalytics } from '../hooks/useAnalytics';
 
 const Header: React.FC = () => {
@@ -15,7 +7,7 @@ const Header: React.FC = () => {
 
   const handleNavClick = (navItem: string) => {
     trackInteraction('navigation_click', 'header', 'system', {
-      nav_item: navItem,
+      nav_item: navItem
     });
   };
 
@@ -27,7 +19,7 @@ const Header: React.FC = () => {
     if (value.length > 2) {
       trackInteraction('search_query', 'header', 'system', {
         query_length: value.length,
-        query: value.substring(0, 20),
+        query: value.substring(0, 20) // Only track first 20 chars for privacy
       });
     }
   };
@@ -35,25 +27,23 @@ const Header: React.FC = () => {
   return (
     <header className="fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-50">
       <div className="max-w-screen-lg mx-auto px-4 md:px-8 py-2 flex items-center justify-between">
-        {/* Logo */}
         <div className="flex items-center">
-          <Instagram
-            className="h-8 w-8 mr-2 cursor-pointer"
+          <Instagram 
+            className="h-8 w-8 mr-2 cursor-pointer" 
             onClick={() => handleNavClick('logo')}
           />
-          <h1
+          <h1 
             className="text-lg font-semibold hidden sm:block cursor-pointer"
             onClick={() => handleNavClick('logo_text')}
           >
             Instagram
           </h1>
         </div>
-
-        {/* Search Bar */}
+        
         <div className="hidden md:flex mx-4 flex-1 max-w-xs">
           <div className="relative w-full">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-5 w-5 text-gray-400" />
+              <Search className="h-4 w-4 text-gray-400" />
             </div>
             <input
               type="text"
@@ -64,50 +54,47 @@ const Header: React.FC = () => {
             />
           </div>
         </div>
-
-        {/* Right Side Icons */}
+        
         <nav className="flex items-center">
-          {/* Mobile search icon */}
           <div className="md:hidden mr-4">
-            <Search
-              className="h-6 w-6 cursor-pointer"
+            <Search 
+              className="h-6 w-6 cursor-pointer" 
               onClick={() => handleNavClick('mobile_search')}
             />
           </div>
-
-          {/* Desktop icons */}
           <div className="hidden md:flex items-center space-x-4">
-            <Home
-              className="h-6 w-6 cursor-pointer transition-transform hover:scale-110"
+            <Home 
+              className="h-6 w-6 cursor-pointer transition-transform hover:scale-110" 
               onClick={() => handleNavClick('home')}
             />
-            <Send
-              className="h-6 w-6 cursor-pointer transition-transform hover:scale-110"
+            <Send 
+              className="h-6 w-6 cursor-pointer transition-transform hover:scale-110" 
               onClick={() => handleNavClick('messages')}
             />
-            <PlusSquare
-              className="h-6 w-6 cursor-pointer transition-transform hover:scale-110"
+            <PlusSquare 
+              className="h-6 w-6 cursor-pointer transition-transform hover:scale-110" 
               onClick={() => handleNavClick('create')}
             />
-            <Film
-              className="h-6 w-6 cursor-pointer transition-transform hover:scale-110"
+            <Film 
+              className="h-6 w-6 cursor-pointer transition-transform hover:scale-110" 
               onClick={() => handleNavClick('reels')}
             />
-            {/* Profile picture */}
-            <div
-              className="h-6 w-6 rounded-full overflow-hidden cursor-pointer border border-gray-200 hover:shadow-md transition-shadow"
-              onClick={() => handleNavClick('profile')}
-            >
-              <img
-                src="https://i.ibb.co/ymN2m0CM/20250502-0208-image.png"
-                alt="Profile"
-                className="h-full w-full object-cover"
-              />
-            </div>
+            <Heart 
+              className="h-6 w-6 cursor-pointer transition-transform hover:scale-110" 
+              onClick={() => handleNavClick('notifications')}
+            />
           </div>
-
-          {/* Mobile menu button */}
-          <button
+          <div 
+            className="h-7 w-7 rounded-full bg-gray-300 overflow-hidden cursor-pointer border border-gray-200"
+            onClick={() => handleNavClick('profile')}
+          >
+            <img
+              src="https://i.ibb.co/ymN2m0CM/20250502-0208-image.png" 
+              alt="Profile"
+              className="h-full w-full object-cover"
+            />
+          </div>
+          <button 
             className="md:hidden ml-4"
             onClick={() => handleNavClick('mobile_menu')}
           >

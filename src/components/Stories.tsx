@@ -39,7 +39,7 @@ const Stories: React.FC = () => {
   const { trackInteraction } = useAnalytics();
 
   const stories = [
-    { username: 'Your story', imageUrl: 'https://images.pexels.com/photos/3763188/pexels-photo-3763188.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2', isViewed: true },
+    { username: 'beautyamy.ai', imageUrl: 'https://i.ibb.co/ymN2m0CM/20250502-0208-image.png', isViewed: true },
     { username: 'janedoe', imageUrl: 'https://images.pexels.com/photos/1542085/pexels-photo-1542085.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2' },
     { username: 'travel_guy', imageUrl: 'https://images.pexels.com/photos/1553783/pexels-photo-1553783.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2' },
     { username: 'photo.genius', imageUrl: 'https://images.pexels.com/photos/3748221/pexels-photo-3748221.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2' },
