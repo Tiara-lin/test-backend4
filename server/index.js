@@ -1,3 +1,4 @@
+// index.js
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -21,8 +22,7 @@ async function connectToMongoDB() {
     await client.connect();
     db = client.db('instagram_analytics');
     console.log('Connected to MongoDB');
-    
-    // Create indexes for better performance
+
     await db.collection('user_interactions').createIndex({ timestamp: -1 });
     await db.collection('user_interactions').createIndex({ ip_address: 1 });
     await db.collection('user_interactions').createIndex({ post_id: 1 });
@@ -33,30 +33,22 @@ async function connectToMongoDB() {
   }
 }
 
-// Helper function to get client IP
 function getClientIP(req) {
-  return req.headers['x-forwarded-for'] || 
-         req.connection.remoteAddress || 
-         req.socket.remoteAddress ||
-         (req.connection.socket ? req.connection.socket.remoteAddress : null) ||
-         req.ip;
+  return req.headers['x-forwarded-for'] || req.connection.remoteAddress || req.socket.remoteAddress || req.ip;
 }
 
-// Helper function to get user agent and device info
 function getDeviceInfo(req) {
   const userAgent = req.headers['user-agent'] || '';
   const isMobile = /Mobile|Android|iPhone|iPad/.test(userAgent);
   const browser = userAgent.match(/(Chrome|Firefox|Safari|Edge|Opera)/i)?.[0] || 'Unknown';
-  
   return {
     user_agent: userAgent,
     is_mobile: isMobile,
-    browser: browser,
+    browser,
     device_type: isMobile ? 'mobile' : 'desktop'
   };
 }
 
-// Track user session start
 app.post('/api/track/session', async (req, res) => {
   try {
     const ip_address = getClientIP(req);
@@ -72,34 +64,23 @@ app.post('/api/track/session', async (req, res) => {
     };
 
     await db.collection('user_sessions').insertOne(sessionData);
-    
-    res.json({ 
-      success: true, 
-      session_id: sessionData.session_id,
-      message: 'Session tracked successfully' 
-    });
+
+    res.json({ success: true, session_id: sessionData.session_id });
   } catch (error) {
     console.error('Session tracking error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
 
-// Track user interactions (likes, comments, shares, saves, etc.)
 app.post('/api/track/interaction', async (req, res) => {
   try {
     const ip_address = getClientIP(req);
     const device_info = getDeviceInfo(req);
-    const { 
-      action_type, 
-      post_id, 
-      post_username, 
-      session_id,
-      additional_data 
-    } = req.body;
+    const { action_type, post_id, post_username, session_id, additional_data } = req.body;
 
     const interactionData = {
       ip_address,
-      action_type, // 'like', 'unlike', 'comment', 'share', 'save', 'unsave', 'view_comments', 'play_video', 'pause_video'
+      action_type,
       post_id,
       post_username,
       session_id,
@@ -109,30 +90,19 @@ app.post('/api/track/interaction', async (req, res) => {
     };
 
     await db.collection('user_interactions').insertOne(interactionData);
-    
-    res.json({ 
-      success: true, 
-      message: 'Interaction tracked successfully' 
-    });
+
+    res.json({ success: true, message: 'Interaction tracked successfully' });
   } catch (error) {
     console.error('Interaction tracking error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
 
-// Track post views and scroll behavior
 app.post('/api/track/post-view', async (req, res) => {
   try {
     const ip_address = getClientIP(req);
     const device_info = getDeviceInfo(req);
-    const { 
-      post_id, 
-      post_username, 
-      session_id,
-      view_duration,
-      scroll_percentage,
-      media_type 
-    } = req.body;
+    const { post_id, post_username, session_id, view_duration, scroll_percentage, media_type } = req.body;
 
     const viewData = {
       ip_address,
@@ -141,140 +111,65 @@ app.post('/api/track/post-view', async (req, res) => {
       post_username,
       session_id,
       timestamp: new Date(),
-      view_duration, // in seconds
-      scroll_percentage, // 0-100
-      media_type, // 'image' or 'video'
+      view_duration,
+      scroll_percentage,
+      media_type,
       ...device_info
     };
 
     await db.collection('user_interactions').insertOne(viewData);
-    
-    res.json({ 
-      success: true, 
-      message: 'Post view tracked successfully' 
-    });
+
+    res.json({ success: true, message: 'Post view tracked successfully' });
   } catch (error) {
     console.error('Post view tracking error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
 
-// Get analytics dashboard data
-app.get('/api/analytics/dashboard', async (req, res) => {
+// 🔹 新增多貼文互動統計 API
+app.get('/api/posts/stats', async (req, res) => {
   try {
-    const { timeframe = '24h' } = req.query;
-    
-    let timeFilter = {};
-    const now = new Date();
-    
-    switch (timeframe) {
-      case '1h':
-        timeFilter = { timestamp: { $gte: new Date(now - 60 * 60 * 1000) } };
-        break;
-      case '24h':
-        timeFilter = { timestamp: { $gte: new Date(now - 24 * 60 * 60 * 1000) } };
-        break;
-      case '7d':
-        timeFilter = { timestamp: { $gte: new Date(now - 7 * 24 * 60 * 60 * 1000) } };
-        break;
-      case '30d':
-        timeFilter = { timestamp: { $gte: new Date(now - 30 * 24 * 60 * 60 * 1000) } };
-        break;
+    const ids = req.query.ids?.split(',').map(id => id.trim()).filter(Boolean);
+    if (!ids || ids.length === 0) {
+      return res.status(400).json({ success: false, error: 'Missing or invalid post IDs' });
     }
 
-    // Get interaction counts by type
     const interactionStats = await db.collection('user_interactions').aggregate([
-      { $match: timeFilter },
-      { $group: { _id: '$action_type', count: { $sum: 1 } } }
+      { $match: { post_id: { $in: ids } } },
+      {
+        $group: {
+          _id: { post_id: '$post_id', action_type: '$action_type' },
+          count: { $sum: 1 }
+        }
+      }
     ]).toArray();
 
-    // Get unique users (by IP)
-    const uniqueUsers = await db.collection('user_interactions').distinct('ip_address', timeFilter);
+    const results = {};
+    ids.forEach(id => {
+      results[id] = { post_id: id, views: 0, likes: 0, saves: 0, shares: 0, comments: 0 };
+    });
 
-    // Get most popular posts
-    const popularPosts = await db.collection('user_interactions').aggregate([
-      { $match: { ...timeFilter, post_id: { $exists: true } } },
-      { $group: { _id: { post_id: '$post_id', post_username: '$post_username' }, interactions: { $sum: 1 } } },
-      { $sort: { interactions: -1 } },
-      { $limit: 10 }
-    ]).toArray();
-
-    // Get device breakdown
-    const deviceStats = await db.collection('user_interactions').aggregate([
-      { $match: timeFilter },
-      { $group: { _id: '$device_type', count: { $sum: 1 } } }
-    ]).toArray();
-
-    // Get hourly activity
-    const hourlyActivity = await db.collection('user_interactions').aggregate([
-      { $match: timeFilter },
-      { 
-        $group: { 
-          _id: { $hour: '$timestamp' }, 
-          count: { $sum: 1 } 
-        } 
-      },
-      { $sort: { '_id': 1 } }
-    ]).toArray();
-
-    res.json({
-      success: true,
-      data: {
-        total_interactions: interactionStats.reduce((sum, stat) => sum + stat.count, 0),
-        unique_users: uniqueUsers.length,
-        interaction_breakdown: interactionStats,
-        popular_posts: popularPosts,
-        device_breakdown: deviceStats,
-        hourly_activity: hourlyActivity,
-        timeframe
+    interactionStats.forEach(({ _id, count }) => {
+      const { post_id, action_type } = _id;
+      if (results[post_id]) {
+        if (action_type === 'post_view') results[post_id].views = count;
+        if (action_type === 'like') results[post_id].likes = count;
+        if (action_type === 'save') results[post_id].saves = count;
+        if (action_type === 'share') results[post_id].shares = count;
+        if (action_type === 'comment') results[post_id].comments = count;
       }
     });
+
+    res.json({ success: true, data: Object.values(results) });
   } catch (error) {
-    console.error('Analytics dashboard error:', error);
+    console.error('Bulk post stats error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
 
-// Get detailed user behavior by IP
-app.get('/api/analytics/user/:ip', async (req, res) => {
-  try {
-    const { ip } = req.params;
-    
-    const userInteractions = await db.collection('user_interactions')
-      .find({ ip_address: ip })
-      .sort({ timestamp: -1 })
-      .limit(100)
-      .toArray();
-
-    const userSessions = await db.collection('user_sessions')
-      .find({ ip_address: ip })
-      .sort({ session_start: -1 })
-      .limit(10)
-      .toArray();
-
-    res.json({
-      success: true,
-      data: {
-        ip_address: ip,
-        interactions: userInteractions,
-        sessions: userSessions,
-        total_interactions: userInteractions.length
-      }
-    });
-  } catch (error) {
-    console.error('User analytics error:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-// Health check endpoint
+// Health check
 app.get('/api/health', (req, res) => {
-  res.json({ 
-    success: true, 
-    message: 'Server is running',
-    mongodb_connected: !!db,
-    timestamp: new Date()
-  });
+  res.json({ success: true, mongodb_connected: !!db, timestamp: new Date() });
 });
 
 // Start server
@@ -283,9 +178,8 @@ app.listen(PORT, async () => {
   await connectToMongoDB();
 });
 
-// Graceful shutdown
 process.on('SIGINT', async () => {
-  console.log('Shutting down gracefully...');
+  console.log('Shutting down...');
   await client.close();
   process.exit(0);
 });

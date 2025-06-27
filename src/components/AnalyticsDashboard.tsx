@@ -14,8 +14,18 @@ interface AnalyticsData {
   timeframe: string;
 }
 
+interface PostInteractionStats {
+  post_id: string;
+  likes: number;
+  saves: number;
+  shares: number;
+  comments: number;
+  views: number;
+}
+
 const AnalyticsDashboard: React.FC = () => {
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
+  const [postStats, setPostStats] = useState<PostInteractionStats[]>([]);
   const [timeframe, setTimeframe] = useState('24h');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -39,6 +49,16 @@ const AnalyticsDashboard: React.FC = () => {
   useEffect(() => {
     fetchAnalytics(timeframe);
   }, [timeframe]);
+
+  useEffect(() => {
+    if (analyticsData?.popular_posts?.length) {
+      const ids = analyticsData.popular_posts.map(p => p._id.post_id).join(',');
+      axios.get(`${API_BASE_URL}/posts/stats?ids=${ids}`)
+        .then(res => {
+          if (res.data.success) setPostStats(res.data.data);
+        });
+    }
+  }, [analyticsData]);
 
   const getInteractionIcon = (type: string) => {
     switch (type) {
@@ -167,6 +187,27 @@ const AnalyticsDashboard: React.FC = () => {
             </div>
           )}
 
+          {/* Detailed Post Stats */}
+          {postStats.length > 0 && (
+            <div>
+              <h3 className="text-lg font-semibold mb-3">Detailed Post Stats</h3>
+              <div className="space-y-2">
+                {postStats.map((stat) => (
+                  <div key={stat.post_id} className="p-4 bg-gray-50 rounded-lg">
+                    <p className="font-medium truncate mb-1 text-sm">{stat.post_id}</p>
+                    <div className="flex flex-wrap gap-3 text-sm text-gray-600">
+                      <span>👁️ {stat.views} views</span>
+                      <span>❤️ {stat.likes} likes</span>
+                      <span>💬 {stat.comments} comments</span>
+                      <span>🔖 {stat.saves} saves</span>
+                      <span>📤 {stat.shares} shares</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Device Breakdown */}
           {analyticsData.device_breakdown.length > 0 && (
             <div>
@@ -192,7 +233,7 @@ const AnalyticsDashboard: React.FC = () => {
                   const count = activity?.count || 0;
                   const maxCount = Math.max(...analyticsData.hourly_activity.map(a => a.count));
                   const height = maxCount > 0 ? (count / maxCount) * 100 : 0;
-                  
+
                   return (
                     <div key={hour} className="text-center">
                       <div className="bg-gray-200 rounded-t h-16 flex items-end justify-center relative">
