@@ -5,10 +5,14 @@ import Feed from './components/Feed';
 import Profile from './components/Profile';
 import Suggestions from './components/Suggestions';
 import Footer from './components/Footer';
-import AnalyticsDashboard from './components/AnalyticsDashboard'; // ✅ 加這行
+import AnalyticsDashboard from './components/AnalyticsDashboard';
+import { useMaxScrollTracker } from './hooks/useMaxScrollTracker';
 
 function App() {
   const [showAnalytics, setShowAnalytics] = useState(false);
+
+  // ✅ 在這裡啟動全頁最大 scroll percentage 追蹤
+  useMaxScrollTracker();
 
   return (
     <div className="min-h-screen bg-gray-50">

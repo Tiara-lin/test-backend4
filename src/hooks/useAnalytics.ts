@@ -1,7 +1,11 @@
 import { useEffect, useRef } from 'react';
 import axios from 'axios';
 
-const API_BASE_URL = 'https://test-backend3-production.up.railway.app/api';
+// ✅ 統一 Base URL
+export const API_BASE_URL = 'https://test-backend3-production.up.railway.app/api';
+
+// ✅ module 內還是保留 sessionId，搭配 window
+let sessionId: string | null = null;
 
 interface AnalyticsHook {
   trackSession: () => Promise<void>;
@@ -20,8 +24,6 @@ interface AnalyticsHook {
   ) => Promise<void>;
 }
 
-let sessionId: string | null = null;
-
 export const useAnalytics = (): AnalyticsHook => {
   const sessionTracked = useRef(false);
 
@@ -35,6 +37,9 @@ export const useAnalytics = (): AnalyticsHook => {
 
       if (response.data.success) {
         sessionId = response.data.session_id;
+        // ✅ 全域也掛上
+        (window as any).sessionId = sessionId;
+
         sessionTracked.current = true;
         console.log('✅ Session tracked:', sessionId);
       }
@@ -48,7 +53,6 @@ export const useAnalytics = (): AnalyticsHook => {
 
     await trackSession();
 
-    // 確保 sessionId 有值才繼續
     let retries = 0;
     while (!sessionId && retries < 20) {
       await new Promise((r) => setTimeout(r, 50));
@@ -66,10 +70,7 @@ export const useAnalytics = (): AnalyticsHook => {
     postUsername?: string,
     additionalData: any = {}
   ) => {
-    if (!actionType || typeof actionType !== 'string') {
-      console.warn('⚠️ trackInteraction called with invalid actionType:', actionType);
-      return;
-    }
+    if (!actionType) return;
 
     await ensureSession();
     if (!sessionId) return;
@@ -83,7 +84,7 @@ export const useAnalytics = (): AnalyticsHook => {
         additional_data: additionalData
       });
 
-      console.log(`✅ Interaction tracked: ${actionType}`, { postId, postUsername });
+      console.log(`✅ Interaction tracked: ${actionType}`);
     } catch (error) {
       console.error('❌ Interaction tracking failed:', error);
     }
@@ -109,7 +110,7 @@ export const useAnalytics = (): AnalyticsHook => {
         media_type: mediaType
       });
 
-      console.log(`✅ Post view tracked: ${postId}`, { viewDuration, scrollPercentage });
+      console.log(`✅ Post view tracked: ${postId}`);
     } catch (error) {
       console.error('❌ Post view tracking failed:', error);
     }

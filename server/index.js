@@ -1,4 +1,3 @@
-// index.js
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -9,8 +8,15 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Middleware
-app.use(cors());
+// ✅ 正確的 CORS 設定 (含預檢保險)
+const corsOptions = {
+  origin: 'https://tiara-lin.github.io',
+  credentials: true
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // 👈 保證處理所有預檢 OPTIONS
+
 app.use(express.json());
 
 // MongoDB connection
@@ -21,7 +27,7 @@ async function connectToMongoDB() {
   try {
     await client.connect();
     db = client.db('instagram_analytics');
-    console.log('Connected to MongoDB');
+    console.log('✅ Connected to MongoDB');
 
     await db.collection('user_interactions').createIndex({ timestamp: -1 });
     await db.collection('user_interactions').createIndex({ ip_address: 1 });
@@ -34,7 +40,12 @@ async function connectToMongoDB() {
 }
 
 function getClientIP(req) {
-  return req.headers['x-forwarded-for'] || req.connection.remoteAddress || req.socket.remoteAddress || req.ip;
+  return (
+    req.headers['x-forwarded-for'] ||
+    req.connection.remoteAddress ||
+    req.socket.remoteAddress ||
+    req.ip
+  );
 }
 
 function getDeviceInfo(req) {
@@ -78,6 +89,8 @@ app.post('/api/track/interaction', async (req, res) => {
     const device_info = getDeviceInfo(req);
     const { action_type, post_id, post_username, session_id, additional_data } = req.body;
 
+    console.log('✅ Received interaction:', req.body);
+
     const interactionData = {
       ip_address,
       action_type,
@@ -102,7 +115,8 @@ app.post('/api/track/post-view', async (req, res) => {
   try {
     const ip_address = getClientIP(req);
     const device_info = getDeviceInfo(req);
-    const { post_id, post_username, session_id, view_duration, scroll_percentage, media_type } = req.body;
+    const { post_id, post_username, session_id, view_duration, scroll_percentage, media_type } =
+      req.body;
 
     const viewData = {
       ip_address,
@@ -126,7 +140,38 @@ app.post('/api/track/post-view', async (req, res) => {
   }
 });
 
-// 🔹 新增多貼文互動統計 API
+// 🔹 統計 final_max_scroll
+app.get('/api/session/scroll-stats', async (req, res) => {
+  try {
+    const scrolls = await db.collection('user_interactions').aggregate([
+      { $match: { action_type: 'final_max_scroll' } },
+      {
+        $group: {
+          _id: null,
+          avgScroll: { $avg: '$additional_data.max_scroll_percentage' },
+          maxScroll: { $max: '$additional_data.max_scroll_percentage' },
+          count: { $sum: 1 }
+        }
+      }
+    ]).toArray();
+
+    const result = scrolls[0] || { avgScroll: 0, maxScroll: 0, count: 0 };
+
+    res.json({
+      success: true,
+      data: {
+        average_max_scroll: result.avgScroll,
+        highest_max_scroll: result.maxScroll,
+        total_sessions: result.count
+      }
+    });
+  } catch (error) {
+    console.error('Session scroll stats error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 🔹 多篇貼文 stats
 app.get('/api/posts/stats', async (req, res) => {
   try {
     const ids = req.query.ids?.split(',').map(id => id.trim()).filter(Boolean);
@@ -174,7 +219,7 @@ app.get('/api/health', (req, res) => {
 
 // Start server
 app.listen(PORT, async () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
   await connectToMongoDB();
 });
 

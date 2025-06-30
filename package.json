@@ -6,7 +6,7 @@
   "homepage": "https://Tiara-lin.github.io/test-backend3",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && cpx dist/index.html dist/404.html",
     "lint": "eslint .",
     "preview": "vite preview",
     "server": "node server/index.js",
