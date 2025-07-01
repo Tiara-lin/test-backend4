@@ -8,14 +8,23 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// ✅ 正確的 CORS 設定 (含預檢保險)
+// ✅ 正確 CORS 設定 (含預檢保險 + header 覆寫保險)
 const corsOptions = {
   origin: 'https://tiara-lin.github.io',
   credentials: true
 };
 
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // 👈 保證處理所有預檢 OPTIONS
+app.options('*', cors(corsOptions));
+
+// ⚡️ 額外保險，覆寫 header
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', 'https://tiara-lin.github.io');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+  next();
+});
 
 app.use(express.json());
 
