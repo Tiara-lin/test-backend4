@@ -79,6 +79,7 @@ app.post('/api/track/session', async (req, res) => {
       ip_address,
       session_start: new Date(),
       page_url,
+      uuid,
       ...device_info,
       session_id: `${ip_address}_${Date.now()}`
     };
@@ -101,6 +102,7 @@ app.post('/api/track/interaction', async (req, res) => {
     console.log('✅ Received interaction:', req.body);
 
     const interactionData = {
+      uuid,
       ip_address,
       action_type,
       post_id,

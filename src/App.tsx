@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from './components/Header';
 import Stories from './components/Stories';
 import Feed from './components/Feed';
@@ -11,8 +11,22 @@ import { useMaxScrollTracker } from './hooks/useMaxScrollTracker';
 function App() {
   const [showAnalytics, setShowAnalytics] = useState(false);
 
-  // ✅ 在這裡啟動全頁最大 scroll percentage 追蹤
+  // ✅ 啟用全頁最大 scroll 追蹤
   useMaxScrollTracker();
+
+  // ✅ UUID 驗證（含格式）
+  useEffect(() => {
+    const uuid = localStorage.getItem('uuid');
+
+    const isValidUUID = uuid &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(uuid);
+
+    if (!isValidUUID) {
+      console.warn('⚠️ UUID 不存在或格式錯誤，可能是未經問卷導向的使用者');
+      // ❗若需導回問卷請取消註解下列行
+      // window.location.href = 'https://your.qualtrics.link';
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -39,7 +53,7 @@ function App() {
         </div>
       </main>
 
-      {/*隱藏 analytics 組件，但仍會發送 API 請求*/}
+      {/* 隱藏 analytics 組件，但仍會發送 API 請求 */}
       <div style={{ display: 'none' }}>
         <AnalyticsDashboard />
       </div>
