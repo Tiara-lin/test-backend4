@@ -161,19 +161,21 @@ app.get('/api/session/scroll-stats', async (req, res) => {
           _id: null,
           avgScroll: { $avg: '$additional_data.max_scroll_percentage' },
           maxScroll: { $max: '$additional_data.max_scroll_percentage' },
-          count: { $sum: 1 }
+          count: { $sum: 1 },
+          uuids: { $addToSet: '$uuid' } // ✅ 加入 uuid 清單
         }
       }
     ]).toArray();
 
-    const result = scrolls[0] || { avgScroll: 0, maxScroll: 0, count: 0 };
+    const result = scrolls[0] || { avgScroll: 0, maxScroll: 0, count: 0, uuids: [] };
 
     res.json({
       success: true,
       data: {
         average_max_scroll: result.avgScroll,
         highest_max_scroll: result.maxScroll,
-        total_sessions: result.count
+        total_sessions: result.count,
+        uuids: result.uuids.filter(Boolean) // ✅ 過濾掉 null 值
       }
     });
   } catch (error) {
@@ -181,6 +183,7 @@ app.get('/api/session/scroll-stats', async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 });
+
 
 // 🔹 多篇貼文 stats
 app.get('/api/posts/stats', async (req, res) => {
