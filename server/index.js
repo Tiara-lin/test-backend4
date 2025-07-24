@@ -126,8 +126,7 @@ app.post('/api/track/post-view', async (req, res) => {
   try {
     const ip_address = getClientIP(req);
     const device_info = getDeviceInfo(req);
-    const { post_id, post_username, session_id, view_duration, scroll_percentage, media_type } =
-      req.body;
+    const { post_id, post_username, session_id, view_duration, scroll_percentage, media_type, uuid } = req.body;
 
     const viewData = {
       uuid,
