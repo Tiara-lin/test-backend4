@@ -130,6 +130,7 @@ app.post('/api/track/post-view', async (req, res) => {
       req.body;
 
     const viewData = {
+      uuid,
       ip_address,
       action_type: 'post_view',
       post_id,

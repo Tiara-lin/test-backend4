@@ -15,18 +15,19 @@ function App() {
   useMaxScrollTracker();
 
   // ✅ UUID 驗證（含格式）
-  useEffect(() => {
-    const uuid = localStorage.getItem('uuid');
+ useEffect(() => {
+  let uuid = localStorage.getItem('uuid');
 
-    const isValidUUID = uuid &&
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(uuid);
+  const isValidUUID = uuid &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(uuid);
 
-    if (!isValidUUID) {
-      console.warn('⚠️ UUID 不存在或格式錯誤，可能是未經問卷導向的使用者');
-      // ❗若需導回問卷請取消註解下列行
-      // window.location.href = 'https://your.qualtrics.link';
-    }
-  }, []);
+  if (!isValidUUID) {
+    uuid = crypto.randomUUID(); // ✅ 產生新的 UUID
+    localStorage.setItem('uuid', uuid);
+    console.log('✅ New UUID generated and saved:', uuid);
+  }
+}, []);
+
 
   return (
     <div className="min-h-screen bg-gray-50">
