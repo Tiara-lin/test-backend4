@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal, Play, Volume2, VolumeX } from 'lucide-react';
 import { useAnalytics } from '../hooks/useAnalytics';
+import { AnalyticsHook } from '../hooks/useAnalytics';
 
 interface Comment {
   username: string;
@@ -20,6 +21,7 @@ interface PostProps {
   likes: number;
   timestamp: string;
   comments: Comment[];
+  analytics: AnalyticsHook;
 }
 
 const Post: React.FC<PostProps> = ({
@@ -43,7 +45,7 @@ const Post: React.FC<PostProps> = ({
   const viewStartTime = useRef<number>(Date.now());
   const hasTrackedView = useRef(false);
   
-  const { trackInteraction, trackPostView } = useAnalytics();
+  const { ensureSession, trackInteraction, trackPostView } = useAnalytics(); 
   const postId = `${username}_${caption.slice(0, 20).replace(/\s+/g, '_')}`;
 
   const handleLike = async () => {
@@ -129,8 +131,9 @@ const Post: React.FC<PostProps> = ({
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        entries.forEach((entry) => {
+        entries.forEach(async (entry) => {
           if (entry.isIntersecting && !hasTrackedView.current) {
+            await ensureSession();  // ✅ 確保 session 建立（含 UUID）
             hasTrackedView.current = true;
             viewStartTime.current = Date.now();
           } else if (!entry.isIntersecting && hasTrackedView.current) {
@@ -143,7 +146,7 @@ const Post: React.FC<PostProps> = ({
               username,
               viewDuration,
               Math.abs(scrollPercentage),
-              media?.type || 'image'
+              (media?.type as 'image' | 'video') || 'image'  // ✅ 修正重點：強制轉型
             );
           }
         });
@@ -155,7 +158,7 @@ const Post: React.FC<PostProps> = ({
     return () => {
       if (postRef.current) observer.unobserve(postRef.current);
     };
-  }, [postId, username, media?.type, trackPostView]);
+  }, [postId, username, media?.type, trackPostView, ensureSession]);
 
   const displayedComments = showAllComments ? comments : comments.slice(0, 2);
 

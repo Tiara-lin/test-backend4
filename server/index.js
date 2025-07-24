@@ -73,7 +73,7 @@ app.post('/api/track/session', async (req, res) => {
   try {
     const ip_address = getClientIP(req);
     const device_info = getDeviceInfo(req);
-    const { page_url } = req.body;
+    const { page_url, uuid } = req.body;
 
     const sessionData = {
       ip_address,
@@ -97,7 +97,7 @@ app.post('/api/track/interaction', async (req, res) => {
   try {
     const ip_address = getClientIP(req);
     const device_info = getDeviceInfo(req);
-    const { action_type, post_id, post_username, session_id, additional_data } = req.body;
+    const { action_type, post_id, post_username, session_id, additional_data, uuid } = req.body;
 
     console.log('✅ Received interaction:', req.body);
 

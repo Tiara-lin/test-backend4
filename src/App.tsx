@@ -7,11 +7,11 @@ import Suggestions from './components/Suggestions';
 import Footer from './components/Footer';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
 import { useMaxScrollTracker } from './hooks/useMaxScrollTracker';
+import { useAnalytics } from './hooks/useAnalytics'; // ✅ 新增
 
 function App() {
-  const [showAnalytics, setShowAnalytics] = useState(false);
 
-  // ✅ 啟用全頁最大 scroll 追蹤
+  const analytics = useAnalytics(); // ✅ 統一呼叫
   useMaxScrollTracker();
 
   // ✅ UUID 驗證（含格式）
@@ -37,7 +37,8 @@ function App() {
           {/* Main content */}
           <div className="w-full lg:flex-1">
             <Stories />
-            <Feed />
+            {/* ✅ 傳入 analytics props */}
+            <Feed analytics={analytics} />
           </div>
 
           {/* Sidebar */}
